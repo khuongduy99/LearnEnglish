@@ -3,77 +3,78 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Đọc Excel bằng JS</title>
-
-<!-- Thư viện đọc Excel -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
-
+<title>Học từ vựng tiếng Anh</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  padding: 20px;
-}
-
-.word {
-  font-size: 24px;
-  color: #007bff;
-  font-weight: bold;
-}
-
-.meaning {
-  font-size: 18px;
-  margin-top: 5px;
-}
-
-.example {
-  font-size: 14px;
-  color: #555;
-  margin-top: 5px;
-}
-
-button {
-  margin-top: 15px;
-  padding: 10px 15px;
+* { box-sizing: border-box; font-family: Arial, sans-serif; }
+body { margin: 0; padding: 0; background: #f2f4f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+.container { background: #fff; width: 90%; max-width: 400px; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
+h1 { margin-bottom: 20px; color: #333; }
+.word { font-size: 28px; font-weight: bold; color: #007bff; margin-bottom: 10px; }
+.meaning { font-size: 18px; color: #333; margin-bottom: 10px; display: none; }
+.example { font-size: 14px; color: #666; margin-bottom: 20px; display: none; }
+button { width: 100%; padding: 12px; margin: 8px 0; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; }
+.btn-meaning { background: #28a745; color: #fff; }
+.btn-next { background: #007bff; color: #fff; }
+@media (max-width: 480px) {
+  .word { font-size: 24px; }
+  .meaning { font-size: 16px; }
 }
 </style>
 </head>
 <body>
 
-<h2>📘 Học từ vựng từ Excel</h2>
+<div class="container">
+    <h1>📘 Học từ vựng</h1>
+    <div class="word" id="word">Word</div>
+    <div class="meaning" id="meaning">Meaning</div>
+    <div class="example" id="example">Example sentence</div>
 
-<div class="word" id="word">---</div>
-<div class="meaning" id="meaning"></div>
-<div class="example" id="example"></div>
-
-<button onclick="nextWord()">Từ tiếp theo</button>
+    <button class="btn-meaning" onclick="toggleMeaning()">Hiện / Ẩn nghĩa</button>
+    <button class="btn-next" onclick="nextWord()">Từ tiếp theo ➡️</button>
+</div>
 
 <script>
 let vocab = [];
-let index = 0;
+let currentIndex = 0;
 
-// Đọc file Excel có sẵn
-fetch("vocab.xlsx")
-  .then(res => res.arrayBuffer())
-  .then(data => {
-    const workbook = XLSX.read(data, { type: "array" });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-
-    vocab = XLSX.utils.sheet_to_json(sheet);
+// Load CSV
+fetch("vocab.csv")
+  .then(res => res.text())
+  .then(text => {
+    const lines = text.trim().split("\n");
+    vocab = lines.slice(1).map(line => {
+      const [word, meaning, example] = line.split(",");
+      return { word, meaning, example };
+    });
     showWord();
-  });
+  })
+  .catch(err => console.error("Không load được vocab.csv", err));
 
 function showWord() {
-  if (vocab.length === 0) return;
+    if (vocab.length === 0) return;
+    document.getElementById("word").innerText = vocab[currentIndex].word;
+    document.getElementById("meaning").innerText = vocab[currentIndex].meaning;
+    document.getElementById("example").innerText = vocab[currentIndex].example;
 
-  document.getElementById("word").innerText = vocab[index].word;
-  document.getElementById("meaning").innerText = vocab[index].meaning;
-  document.getElementById("example").innerText = vocab[index].example;
+    document.getElementById("meaning").style.display = "none";
+    document.getElementById("example").style.display = "none";
+}
+
+function toggleMeaning() {
+    const meaning = document.getElementById("meaning");
+    const example = document.getElementById("example");
+    if (meaning.style.display === "none") {
+        meaning.style.display = "block";
+        example.style.display = "block";
+    } else {
+        meaning.style.display = "none";
+        example.style.display = "none";
+    }
 }
 
 function nextWord() {
-  index = (index + 1) % vocab.length;
-  showWord();
+    currentIndex = (currentIndex + 1) % vocab.length;
+    showWord();
 }
 </script>
 
