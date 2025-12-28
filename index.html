@@ -3,34 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Học từ vựng tiếng Anh</title>
+<title>Học từ vựng tiếng Anh - Quiz</title>
 <style>
-* { box-sizing: border-box; font-family: Arial, sans-serif; }
-body { margin: 0; padding: 0; background: #f2f4f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-.container { background: #fff; width: 90%; max-width: 400px; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; }
-h1 { margin-bottom: 20px; color: #333; }
-.word { font-size: 28px; font-weight: bold; color: #007bff; margin-bottom: 10px; }
-.meaning { font-size: 18px; color: #333; margin-bottom: 10px; display: none; }
-.example { font-size: 14px; color: #666; margin-bottom: 20px; display: none; }
-button { width: 100%; padding: 12px; margin: 8px 0; font-size: 16px; border: none; border-radius: 8px; cursor: pointer; }
-.btn-meaning { background: #28a745; color: #fff; }
-.btn-next { background: #007bff; color: #fff; }
-@media (max-width: 480px) {
-  .word { font-size: 24px; }
-  .meaning { font-size: 16px; }
-}
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f2f4f8; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+.container { background:#fff; width:90%; max-width:500px; padding:20px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1); text-align:center; }
+h1 { color:#333; margin-bottom:20px; }
+.word { font-size:24px; font-weight:bold; margin-bottom:10px; color:#007bff; }
+.options { display:flex; flex-direction:column; margin-top:10px; }
+button.option { margin:5px 0; padding:12px; font-size:16px; border-radius:8px; border:none; cursor:pointer; background:#eee; transition:0.2s; }
+button.option:hover { background:#ddd; }
+button.correct { background:#28a745; color:#fff; }
+button.wrong { background:#dc3545; color:#fff; }
+#nextBtn { margin-top:15px; padding:12px; width:100%; font-size:16px; border:none; border-radius:8px; background:#007bff; color:#fff; cursor:pointer; display:none; }
+@media(max-width:480px){ .word{font-size:20px;} button.option{font-size:14px;} #nextBtn{font-size:14px;} }
 </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📘 Học từ vựng</h1>
-    <div class="word" id="word">Word</div>
-    <div class="meaning" id="meaning">Meaning</div>
-    <div class="example" id="example">Example sentence</div>
-
-    <button class="btn-meaning" onclick="toggleMeaning()">Hiện / Ẩn nghĩa</button>
-    <button class="btn-next" onclick="nextWord()">Từ tiếp theo ➡️</button>
+<h1>📘 Quiz từ vựng</h1>
+<div class="word" id="word">Loading...</div>
+<div class="options" id="options"></div>
+<button id="nextBtn" onclick="nextQuestion()">Tiếp theo ➡️</button>
 </div>
 
 <script>
@@ -42,39 +36,70 @@ fetch("vocab.csv")
   .then(res => res.text())
   .then(text => {
     const lines = text.trim().split("\n");
+    const headers = lines[0].split(",");
     vocab = lines.slice(1).map(line => {
-      const [word, meaning, example] = line.split(",");
-      return { word, meaning, example };
+      // split CSV, loại bỏ dấu ngoặc kép nếu cần
+      const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+      return {
+        word: cols[0],
+        type: cols[1],
+        meaning: cols[2].replace(/"/g,""),
+        example: cols[3].replace(/"/g,""),
+        viet_example: cols[4].replace(/"/g,""),
+        notes: cols[5].replace(/"/g,"")
+      };
     });
-    showWord();
-  })
-  .catch(err => console.error("Không load được vocab.csv", err));
+    showQuestion();
+  });
 
-function showWord() {
-    if (vocab.length === 0) return;
-    document.getElementById("word").innerText = vocab[currentIndex].word;
-    document.getElementById("meaning").innerText = vocab[currentIndex].meaning;
-    document.getElementById("example").innerText = vocab[currentIndex].example;
-
-    document.getElementById("meaning").style.display = "none";
-    document.getElementById("example").style.display = "none";
-}
-
-function toggleMeaning() {
-    const meaning = document.getElementById("meaning");
-    const example = document.getElementById("example");
-    if (meaning.style.display === "none") {
-        meaning.style.display = "block";
-        example.style.display = "block";
-    } else {
-        meaning.style.display = "none";
-        example.style.display = "none";
+// Tạo đáp án ABCD
+function getOptions(correctMeaning) {
+    const meanings = vocab.map(v => v.meaning);
+    let options = [correctMeaning];
+    while (options.length < 4) {
+        const rand = meanings[Math.floor(Math.random()*meanings.length)];
+        if (!options.includes(rand)) options.push(rand);
     }
+    return options.sort(() => Math.random()-0.5);
 }
 
-function nextWord() {
+// Hiển thị câu hỏi
+function showQuestion() {
+    const q = vocab[currentIndex];
+    document.getElementById("word").innerText = `${q.word} (${q.type})`;
+    const opts = getOptions(q.meaning);
+    const optionsDiv = document.getElementById("options");
+    optionsDiv.innerHTML = "";
+    opts.forEach(opt=>{
+        const btn = document.createElement("button");
+        btn.className = "option";
+        btn.innerText = opt;
+        btn.onclick = ()=>checkAnswer(btn,opt,q.meaning);
+        optionsDiv.appendChild(btn);
+    });
+    document.getElementById("nextBtn").style.display = "none";
+}
+
+// Kiểm tra đáp án
+function checkAnswer(btn, selected, correct) {
+    const allBtns = document.querySelectorAll("button.option");
+    allBtns.forEach(b=>b.disabled=true);
+    if(selected === correct){
+        btn.classList.add("correct");
+    } else {
+        btn.classList.add("wrong");
+        // highlight đáp án đúng
+        allBtns.forEach(b=>{
+            if(b.innerText===correct) b.classList.add("correct");
+        });
+    }
+    document.getElementById("nextBtn").style.display = "block";
+}
+
+// Câu tiếp theo
+function nextQuestion() {
     currentIndex = (currentIndex + 1) % vocab.length;
-    showWord();
+    showQuestion();
 }
 </script>
 
