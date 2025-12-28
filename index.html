@@ -3,27 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Học từ vựng tiếng Anh - Quiz</title>
+<title>Học từ vựng - Quiz nhiều chủ đề</title>
 <style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f2f4f8; display:flex; justify-content:center; align-items:center; min-height:100vh; }
-.container { background:#fff; width:90%; max-width:500px; padding:20px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1); text-align:center; }
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f2f4f8; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; }
+.container { background:#fff; width:95%; max-width:500px; margin:20px; padding:20px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.1); text-align:center; }
 h1 { color:#333; margin-bottom:20px; }
+.topic-list { text-align:left; margin-bottom:20px; }
+.topic-list label { display:block; margin:5px 0; font-size:16px; cursor:pointer; }
+button, select { padding:10px 15px; font-size:16px; border-radius:8px; border:none; cursor:pointer; margin-bottom:20px; background:#007bff; color:black; }
+select { width:100%; background:#fff; color:#333; border:1px solid #ccc; }
 .word { font-size:24px; font-weight:bold; margin-bottom:10px; color:#007bff; }
-.options { display:flex; flex-direction:column; margin-top:10px; }
-button.option { margin:5px 0; padding:12px; font-size:16px; border-radius:8px; border:none; cursor:pointer; background:#eee; transition:0.2s; }
+.options, #fillInputDiv { display:flex; flex-direction:column; margin-top:10px; align-items:center; }
+button.option { margin:5px 0; padding:12px; font-size:16px; border-radius:8px; border:none; cursor:pointer; background:#eee; transition:0.2s; width:100%; }
 button.option:hover { background:#ddd; }
 button.correct { background:#28a745; color:#fff; }
 button.wrong { background:#dc3545; color:#fff; }
 #nextBtn { margin-top:15px; padding:12px; width:100%; font-size:16px; border:none; border-radius:8px; background:#007bff; color:#fff; cursor:pointer; display:none; }
-@media(max-width:480px){ .word{font-size:20px;} button.option{font-size:14px;} #nextBtn{font-size:14px;} }
+input[type="text"] { padding:10px; font-size:16px; border-radius:8px; border:1px solid #ccc; width:80%; margin-bottom:10px; }
+@media(max-width:480px){ .word{font-size:20px;} button.option{font-size:14px;} #nextBtn{font-size:14px;} input[type="text"]{font-size:14px;} }
+/* Nếu hệ thống đang dark mode */
+@media (prefers-color-scheme: dark) {
+    body {
+        background:#121212;
+        color:#eee;
+    }
+    .container {
+        background:#1e1e1e;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    button, select {
+        background:#333;
+        color:#fff;
+    }
+    button.option { background:#555; color:#fff; }
+    button.option:hover { background:#666; }
+    button.correct { background:#28a745; color:#fff; }
+    button.wrong { background:#dc3545; color:#fff; }
+}
+
 </style>
 </head>
 <body>
 
 <div class="container">
-<h1>📘 Quiz từ vựng</h1>
-<div class="word" id="word">Loading...</div>
+<h1>📘 Quiz từ vựng nhiều chủ đề</h1>
+
+<!-- Checkbox menu chọn nhiều CSV -->
+<div class="topic-list" id="topicList">
+  <label><input type="checkbox" value="contracts.csv"> Contracts</label>
+  <label><input type="checkbox" value="marketing.csv"> Marketing</label>
+</div>
+
+<button onclick="loadSelectedTopics()" style="color: white;">Load Quiz</button>
+
+<!-- Chọn loại quiz -->
+<select id="quizTypeSelect">
+  <option value="mc">Multiple Choice</option>
+  <option value="fill">Điền từ</option>
+<option value="pos">Chọn loại từ (POS)</option>
+  <option value="mix">Trộn MC & Điền từ</option>
+</select>
+
+<div class="progress" id="progress" style="margin-bottom:10px; color:#555;"></div>
+<div class="word" id="word">Chọn chủ đề để bắt đầu</div>
 <div class="options" id="options"></div>
+
+<!-- Fill-in input -->
+<div id="fillInputDiv" style="display:none;">
+  <input type="text" id="fillInput" placeholder="Nhập từ tiếng Anh"/>
+  <button onclick="checkFillAnswer()">Kiểm tra</button>
+</div>
+
 <button id="nextBtn" onclick="nextQuestion()">Tiếp theo ➡️</button>
 </div>
 
@@ -31,69 +81,136 @@ button.wrong { background:#dc3545; color:#fff; }
 let vocab = [];
 let currentIndex = 0;
 
-// Load CSV
-fetch("vocab.csv")
-  .then(res => res.text())
-  .then(text => {
-    const lines = text.trim().split("\n");
-    const headers = lines[0].split(",");
-    vocab = lines.slice(1).map(line => {
-      // split CSV, loại bỏ dấu ngoặc kép nếu cần
-      const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-      return {
-        word: cols[0],
-        type: cols[1],
-        meaning: cols[2].replace(/"/g,""),
-        example: cols[3].replace(/"/g,""),
-        viet_example: cols[4].replace(/"/g,""),
-        notes: cols[5].replace(/"/g,"")
-      };
-    });
-    showQuestion();
-  });
+// Khi load quiz từ các chủ đề đã chọn
+function loadSelectedTopics() {
+    const checkboxes = document.querySelectorAll('#topicList input[type="checkbox"]:checked');
+    const selectedFiles = Array.from(checkboxes).map(cb => cb.value);
+    if(selectedFiles.length === 0) return alert("Vui lòng chọn ít nhất 1 chủ đề");
+
+    vocab = [];
+    currentIndex = 0;
+
+    let fetches = selectedFiles.map(file => fetch(file).then(res => res.text()));
+
+    Promise.all(fetches)
+        .then(results => {
+            results.forEach(text => {
+                const lines = text.trim().split("\n");
+                lines.slice(1).forEach(line => {
+                    const cols = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                    vocab.push({
+                        word: cols[0],
+                        type: cols[1],
+                        meaning: cols[2].replace(/"/g,""),
+                        example: cols[3].replace(/"/g,""),
+                        viet_example: cols[4].replace(/"/g,"")
+                    });
+                });
+            });
+            vocab.sort(() => Math.random()-0.5);
+            showQuestion();
+        })
+        .catch(err => console.error("Không load được CSV", err));
+}
 
 // Tạo đáp án ABCD
 function getOptions(correctMeaning) {
     const meanings = vocab.map(v => v.meaning);
     let options = [correctMeaning];
-    while (options.length < 4) {
+    while(options.length < 4){
         const rand = meanings[Math.floor(Math.random()*meanings.length)];
-        if (!options.includes(rand)) options.push(rand);
+        if(!options.includes(rand)) options.push(rand);
     }
     return options.sort(() => Math.random()-0.5);
 }
 
 // Hiển thị câu hỏi
 function showQuestion() {
+    if(vocab.length===0) return;
     const q = vocab[currentIndex];
-    document.getElementById("word").innerText = `${q.word} (${q.type})`;
-    const opts = getOptions(q.meaning);
+    let quizType = document.getElementById("quizTypeSelect").value;
+
+    // Nếu chọn mix → random MC hoặc Fill-in
+    if(quizType === "mix"){
+        quizType = Math.random() < 0.5 ? "mc" : "fill";
+    }
+
+    // Hiển thị tiến trình
+    document.getElementById("progress").innerText = `Câu ${currentIndex+1} / ${vocab.length}`;
+
     const optionsDiv = document.getElementById("options");
+    const fillDiv = document.getElementById("fillInputDiv");
     optionsDiv.innerHTML = "";
-    opts.forEach(opt=>{
-        const btn = document.createElement("button");
-        btn.className = "option";
-        btn.innerText = opt;
-        btn.onclick = ()=>checkAnswer(btn,opt,q.meaning);
-        optionsDiv.appendChild(btn);
-    });
+    fillDiv.style.display = "none";
+
+    if(quizType === "mc") {
+        document.getElementById("word").innerText = `${q.word} (${q.type})`;
+        optionsDiv.style.display = "flex";
+        const opts = getOptions(q.meaning);
+        opts.forEach(opt=>{
+            const btn = document.createElement("button");
+            btn.className = "option";
+            btn.innerText = opt;
+            btn.onclick = ()=>checkAnswer(btn,opt,q.meaning);
+            optionsDiv.appendChild(btn);
+        });
+    } else if(quizType === "fill") {
+        document.getElementById("word").innerText = `${q.meaning}`;
+        optionsDiv.style.display = "none";
+        fillDiv.style.display = "flex";
+        document.getElementById("fillInput").value = "";
+        document.getElementById("fillInput").disabled = false;
+    } else if(quizType === "pos") {
+        document.getElementById("word").innerText = q.word;
+        optionsDiv.style.display = "flex";
+        const posOptions = ["v", "adj", "n", "adv"];
+        posOptions.sort(() => Math.random() - 0.5); // trộn ngẫu nhiên
+        posOptions.forEach(opt=>{
+            const btn = document.createElement("button");
+            btn.className = "option";
+            btn.innerText = opt;
+            btn.onclick = ()=>checkAnswer(btn,opt,q.type);
+            optionsDiv.appendChild(btn);
+        });
+    }
+
     document.getElementById("nextBtn").style.display = "none";
 }
 
-// Kiểm tra đáp án
+
+
+// Kiểm tra MC
 function checkAnswer(btn, selected, correct) {
     const allBtns = document.querySelectorAll("button.option");
     allBtns.forEach(b=>b.disabled=true);
-    if(selected === correct){
+    if(selected===correct){
         btn.classList.add("correct");
     } else {
         btn.classList.add("wrong");
-        // highlight đáp án đúng
         allBtns.forEach(b=>{
             if(b.innerText===correct) b.classList.add("correct");
         });
     }
     document.getElementById("nextBtn").style.display = "block";
+}
+
+// Kiểm tra Fill-in
+function checkFillAnswer() {
+    const q = vocab[currentIndex];
+    const input = document.getElementById("fillInput").value.trim().toLowerCase();
+    const nextBtn = document.getElementById("nextBtn");
+    const fillDiv = document.getElementById("fillInputDiv");
+    const optionsDiv = document.getElementById("options");
+    
+    // Disable input
+    document.getElementById("fillInput").disabled = true;
+    
+    if(input === q.word.toLowerCase()){
+        alert("✅ Chính xác!");
+    } else {
+        alert(`❌ Sai! Đáp án đúng: ${q.word}`);
+    }
+    nextBtn.style.display = "block";
 }
 
 // Câu tiếp theo
