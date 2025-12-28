@@ -14,8 +14,6 @@ button, select { padding:10px 15px; font-size:16px; border-radius:8px; border:no
 select { width:100%; background:#fff; color:#333; border:1px solid #ccc; }
 .word { font-size:24px; font-weight:bold; margin-bottom:10px; color:#007bff; }
 .options, #fillInputDiv { display:flex; flex-direction:column; margin-top:10px; align-items:center; }
-button.option { margin:5px 0; padding:12px; font-size:16px; border-radius:8px; border:none; cursor:pointer; background:#eee; transition:0.2s; width:100%; }
-button.option:hover { background:#ddd; }
 button.correct { background:#28a745; color:#fff; }
 button.wrong { background:#dc3545; color:#fff; }
 #nextBtn { margin-top:15px; padding:12px; width:100%; font-size:16px; border:none; border-radius:8px; background:#007bff; color:#fff; cursor:pointer; display:none; }
@@ -39,6 +37,37 @@ input[type="text"] { padding:10px; font-size:16px; border-radius:8px; border:1px
     button.option:hover { background:#666; }
     button.correct { background:#28a745; color:#fff; }
     button.wrong { background:#dc3545; color:#fff; }
+}
+
+button.option {
+    margin:5px 0;
+    padding:12px;
+    font-size:16px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    background:#eee;
+    transition:0.2s;
+    width:100%;
+}
+
+/* hover chỉ áp dụng với button chưa được chọn */
+button.option:not(.correct):not(.wrong):hover {
+    background:#ddd;
+}
+
+/* button đúng */
+button.correct {
+    background:#28a745;
+    color:#fff;
+    cursor: default;
+}
+
+/* button sai */
+button.wrong {
+    background:#dc3545;
+    color:#fff;
+    cursor: default;
 }
 
 </style>
