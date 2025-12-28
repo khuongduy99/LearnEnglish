@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đọc Excel bằng JS</title>
+
+<!-- Thư viện đọc Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.3/dist/xlsx.full.min.js"></script>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.word {
+  font-size: 24px;
+  color: #007bff;
+  font-weight: bold;
+}
+
+.meaning {
+  font-size: 18px;
+  margin-top: 5px;
+}
+
+.example {
+  font-size: 14px;
+  color: #555;
+  margin-top: 5px;
+}
+
+button {
+  margin-top: 15px;
+  padding: 10px 15px;
+}
+</style>
+</head>
+<body>
+
+<h2>📘 Học từ vựng từ Excel</h2>
+
+<div class="word" id="word">---</div>
+<div class="meaning" id="meaning"></div>
+<div class="example" id="example"></div>
+
+<button onclick="nextWord()">Từ tiếp theo</button>
+
+<script>
+let vocab = [];
+let index = 0;
+
+// Đọc file Excel có sẵn
+fetch("vocab.xlsx")
+  .then(res => res.arrayBuffer())
+  .then(data => {
+    const workbook = XLSX.read(data, { type: "array" });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+
+    vocab = XLSX.utils.sheet_to_json(sheet);
+    showWord();
+  });
+
+function showWord() {
+  if (vocab.length === 0) return;
+
+  document.getElementById("word").innerText = vocab[index].word;
+  document.getElementById("meaning").innerText = vocab[index].meaning;
+  document.getElementById("example").innerText = vocab[index].example;
+}
+
+function nextWord() {
+  index = (index + 1) % vocab.length;
+  showWord();
+}
+</script>
+
+</body>
+</html>
