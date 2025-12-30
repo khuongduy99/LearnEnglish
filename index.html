@@ -163,6 +163,7 @@ function getOptions(correctMeaning) {
 }
 
 // Hiển thị câu hỏi
+// Hiển thị câu hỏi
 function showQuestion() {
     if(vocab.length===0) return;
     const q = vocab[currentIndex];
@@ -181,39 +182,43 @@ function showQuestion() {
     optionsDiv.innerHTML = "";
     fillDiv.style.display = "none";
 
+    // Hiển thị ví dụ (mới thêm)
+    const exampleText = q.example ? `<h6>Ví dụ: ${q.example}</j6>` : '';
+    const vietExampleText = q.viet_example ? `<h6>Nghĩa: ${q.viet_example}</h6>` : '';
+    const exampleDiv = document.getElementById("word");
+    exampleDiv.innerHTML = `${quizType === "fill" ? `${q.meaning}` : `${q.word}`} ${quizType === "pos" ? "" : `(${q.type})`}  ${exampleText} ${vietExampleText}`;
+
     if(quizType === "mc") {
-        document.getElementById("word").innerText = `${q.word} (${q.type})`;
         optionsDiv.style.display = "flex";
         const opts = getOptions(q.meaning);
-        opts.forEach(opt=>{
+        opts.forEach(opt => {
             const btn = document.createElement("button");
             btn.className = "option";
             btn.innerText = opt;
-            btn.onclick = ()=>checkAnswer(btn,opt,q.meaning);
+            btn.onclick = () => checkAnswer(btn, opt, q.meaning);
             optionsDiv.appendChild(btn);
         });
     } else if(quizType === "fill") {
-        document.getElementById("word").innerText = `${q.meaning}`;
         optionsDiv.style.display = "none";
         fillDiv.style.display = "flex";
         document.getElementById("fillInput").value = "";
         document.getElementById("fillInput").disabled = false;
     } else if(quizType === "pos") {
-        document.getElementById("word").innerText = q.word;
         optionsDiv.style.display = "flex";
         const posOptions = ["v", "adj", "n", "adv"];
         posOptions.sort(() => Math.random() - 0.5); // trộn ngẫu nhiên
-        posOptions.forEach(opt=>{
+        posOptions.forEach(opt => {
             const btn = document.createElement("button");
             btn.className = "option";
             btn.innerText = opt;
-            btn.onclick = ()=>checkAnswer(btn,opt,q.type);
+            btn.onclick = () => checkAnswer(btn, opt, q.type);
             optionsDiv.appendChild(btn);
         });
     }
 
     document.getElementById("nextBtn").style.display = "none";
 }
+
 
 
 
